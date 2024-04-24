@@ -1,0 +1,190 @@
+<!-- book_detail.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ book.title }} - Book Details</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" crossorigin="anonymous">
+    <!-- Add this section for background gradient -->
+    <style>
+        {% if palette %}
+            body {
+                background: linear-gradient(to right, 
+                    rgb({{ palette[0][0] }}, {{ palette[0][1] }}, {{ palette[0][2] }}),
+                    rgb({{ palette[1][0] }}, {{ palette[1][1] }}, {{ palette[1][2] }}));
+                color: {{ text_colors[0] }};
+            }
+            .card {
+                color: #333;
+            }
+        {% else %}
+            /* Default background style if no colors are available */
+            body {
+                background: #fff; /* Set a default color */
+                color: #333; /* Set a default text color */
+            }
+        {% endif %}
+    </style>
+
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="/">Books</a>
+        <!-- Search bar -->
+		<form class="form-inline my-2 my-lg-0" action="{{ url_for('search') }}" method="POST">
+			<input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search" name="search_query">
+			<button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+		</form>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item active">
+                    <a class="nav-link" href="{{ url_for('home') }}">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#">Profile</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Flash messages -->
+    {% include 'flash_messages.html' %}
+
+    <div class="container mt-5">
+        <h1>{{ book.title }}</h1>
+        
+        <div class="row">
+            <div class="col-md-4">
+                <img src="{{ book.cover_image }}" alt="Book Cover" class="img-fluid">
+               	
+			    <!-- Move to Shelf form -->
+				<form method="post" action="{{ url_for('move_to_shelf', book_id=book.id) }}" id="shelfForm">
+				<hr>
+				  <div class="form-group">
+					<!--<label for="shelfSelect">Shelf:</label>-->
+					<select class="form-control" id="shelfSelect" name="shelf_id" onchange="submitForm()">
+					  <option value="remove_from_all">None</option>
+					  {% for shelf in user_shelves %}
+						{% if shelf in book.bookshelves %}
+						  <option value="{{ shelf.id }}" selected>{{ shelf.shelf_name }}</option>
+						{% else %}
+						  <option value="{{ shelf.id }}">{{ shelf.shelf_name }}</option>
+						{% endif %}
+					  {% endfor %}
+					</select>
+				  </div>
+				  <!--<button type="submit" class="btn btn-primary">Move to Shelf</button>-->
+				</form>
+            </div>
+            <div class="col-md-8">
+                <p><strong>Author:</strong> {{ book.author }}</p>
+                <p><strong>ISBN:</strong> {{ book.isbn }}</p>
+                <p><strong>Publication Date:</strong> {{ book.pub_date.strftime('%B %d, %Y') if book.pub_date else 'N/A' }}</p>
+                <p><strong>Genre:</strong> {{ book.genre }}</p>
+                {% set rounded_rating = average_rating | round(1) %}            
+                <p><strong>Average Rating:</strong> {{ rounded_rating }}
+                    {% set rounded_rating = average_rating|int %}
+                    {% for i in range(rounded_rating) %}
+                        <i class="fas fa-star text-warning"></i>
+                    {% endfor %}
+                    {% for i in range(5 - rounded_rating) %}
+                        <i class="far fa-star text-warning"></i>
+                    {% endfor %}
+                    ({{ num_ratings }} Ratings)
+                </p>
+
+                <p><strong>Description:</strong> {{ book.description }}</p>
+
+                <!-- Add other book details as needed -->
+                
+                <hr>
+
+                <!-- Reviews -->
+                <div class="container mt-4 p-4">
+                
+                    {% if user_review %}
+                        <h2>Update your Review</h2>
+                    {% else %}
+                        <h2>Submit a Review</h2>
+                    {% endif %}
+
+                    <form method="post" action="{{ url_for('book_detail', book_id=book.id) }}">
+                        <div class="form-group">
+                            <label for="rating">Rating:</label>
+                            <select class="form-control" id="rating" name="rating">
+                                <option value="1" {% if user_review and user_review.rating == 1 %}selected{% endif %}>1 star</option>
+                                <option value="2" {% if user_review and user_review.rating == 2 %}selected{% endif %}>2 stars</option>
+                                <option value="3" {% if user_review and user_review.rating == 3 %}selected{% endif %}>3 stars</option>
+                                <option value="4" {% if user_review and user_review.rating == 4 %}selected{% endif %}>4 stars</option>
+                                <option value="5" {% if user_review and user_review.rating == 5 %}selected{% endif %}>5 stars</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="comment">Comment:</label>
+                            <textarea class="form-control" id="comment" name="comment" rows="3">{% if user_review %}{{ user_review.comment }}{% endif %}</textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            {% if user_review %}
+                                Update Review
+                            {% else %}
+                                Submit Review
+                            {% endif %}
+                        </button>
+                    </form>
+                   
+                    {% if user_review %}
+                        <form method="post" action="{{ url_for('delete_review', review_id=user_review.id) }}" style="margin-top: 10px;">
+                            <button type="submit" class="btn btn-danger">Delete Review</button>
+                        </form>
+                    {% endif %}
+                </div>
+
+                <hr>
+                
+                <h2>All Reviews</h2>
+
+                {% if reviews %}
+                    {% for review in reviews %}
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h5 class="card-title">
+                                    <strong>{{ review.user.username }}</strong>
+                                    <br>
+                                    {% for i in range(review.rating) %}
+                                        <i class="fas fa-star text-warning"></i>
+                                    {% endfor %}
+                                    {% for i in range(5 - review.rating) %}
+                                        <i class="far fa-star text-warning"></i>
+                                    {% endfor %}
+                                </h5>
+                                <p class="card-text">{{ review.comment }}</p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No reviews yet. Be the first to submit a review!</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and Popper.js (required for Bootstrap's JavaScript plugins) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.10.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+	<script>
+	  function submitForm() {
+		document.getElementById("shelfForm").submit();
+	  }
+	</script>
+</body>
+</html>
