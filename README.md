@@ -20,8 +20,8 @@ This is a very basic Goodreads clone, built with Python Flask.
   - [X] Automatically grab unknown books from the Google Books API and lazily build a local database
   - [X] Include essential book details: title, cover, ISBN, author, genre, description
 - [X] User Interaction
-  - Ability to add/remove books to/from a personal shelves
-  - Simple rating and review system for books
+  - [X] Ability to add/remove books to/from a personal shelves
+  - [X] Simple rating and review system for books
 - [ ] Import / Export
   + [ ] Import shelves from Goodreads
   + [ ] Export to org mode
